@@ -298,7 +298,7 @@ export const Login = () => {
 
       <div className="flex items-center justify-center p-4 sm:p-8">
         <motion.div
-          initial={{ opacity: 0, y: 16, scale: 0.98 }}
+          initial={false}
           animate={{ opacity: 1, y: 0, scale: 1 }}
           className="w-full max-w-md app-panel p-7 sm:p-8 space-y-6"
         >

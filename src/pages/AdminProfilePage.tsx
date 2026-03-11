@@ -52,7 +52,7 @@ export const AdminProfilePage = () => {
 
   // 🚫 Non-admins cannot view this page
   if (user?.role !== "admin") {
-    return <Navigate to="/pmsreports/profile" replace />;
+    return <Navigate to="/profile" replace />;
   }
 
   // ---- Counts ----

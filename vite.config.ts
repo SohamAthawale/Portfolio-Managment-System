@@ -1,23 +1,35 @@
-import { defineConfig } from 'vite';
+import { defineConfig, loadEnv } from 'vite';
 import react from '@vitejs/plugin-react';
 
-export default defineConfig({
-  plugins: [react()],
+const normalizeBase = (value: string) => {
+  if (!value || value === '/') return '/';
+  const withSlash = value.startsWith('/') ? value : `/${value}`;
+  return withSlash.endsWith('/') ? withSlash : `${withSlash}/`;
+};
 
-  optimizeDeps: {
-    exclude: ['lucide-react'],
-  },
+export default defineConfig(({ mode }) => {
+  const env = loadEnv(mode, process.cwd(), '');
+  const base = normalizeBase(env.VITE_BASE_PATH || (mode === 'production' ? '/pmsreports/' : '/'));
 
-  server: {
-    proxy: {
-      '/pmsreports': {
-        target: 'http://127.0.0.1:8010',
-        changeOrigin: true,
+  return {
+    base,
+    plugins: [react()],
+
+    optimizeDeps: {
+      exclude: ['lucide-react'],
+    },
+
+    server: {
+      proxy: {
+        '/pmsreports': {
+          target: 'http://127.0.0.1:8010',
+          changeOrigin: true,
+        },
       },
     },
-  },
 
-  build: {
-    outDir: 'dist',
-  },
+    build: {
+      outDir: 'dist',
+    },
+  };
 });

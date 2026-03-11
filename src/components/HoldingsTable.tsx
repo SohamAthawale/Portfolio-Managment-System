@@ -131,10 +131,12 @@ export const HoldingsTable: React.FC<HoldingsTableProps> = ({ holdings }) => {
     return filtered;
   }, [holdings, searchTerm, sortField, sortDirection]);
 
+  const hasHoldings = filteredAndSortedHoldings.length > 0;
+
   return (
-    <div className="app-panel-soft p-6">
+    <div className="app-panel-soft p-4 sm:p-6">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 gap-3">
         <h3 className="text-lg font-semibold text-slate-800">Holdings</h3>
 
         <div className="relative">
@@ -147,164 +149,192 @@ export const HoldingsTable: React.FC<HoldingsTableProps> = ({ holdings }) => {
             placeholder="Search company, ISIN, category..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10 pr-4 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-cyan-100 focus:border-cyan-400 text-sm"
+            className="w-full sm:w-72 pl-10 pr-4 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-cyan-100 focus:border-cyan-400 text-sm"
           />
         </div>
       </div>
 
-      {/* Table */}
-      <div className="overflow-x-auto">
-        <table className="min-w-full border-collapse">
-          <thead className="bg-slate-50">
-            <tr className="border-b border-slate-200">
-              <th
-                onClick={() => handleSort("company")}
-                className="text-left py-3 px-4 font-medium text-slate-700 cursor-pointer hover:bg-slate-100"
-              >
-                <div className="flex items-center gap-2">
-                  Company / Scheme <ArrowUpDown size={14} />
+      {/* Mobile cards */}
+      <div className="sm:hidden">
+        {!hasHoldings ? (
+          <div className="text-center py-8 text-slate-500">No holdings found</div>
+        ) : (
+          <div className="space-y-3">
+            {filteredAndSortedHoldings.map((h, i) => (
+              <div key={i} className="rounded-xl border border-slate-200/70 bg-white/80 p-3 shadow-sm">
+                <div className="text-sm font-semibold text-slate-800">{h.company || "—"}</div>
+                <div className="text-xs text-slate-500">
+                  {h.sub_category || h.category || "—"} {h.isin ? `• ${h.isin}` : ""}
                 </div>
-              </th>
-
-              <th className="text-left py-3 px-4 font-medium text-slate-700">
-                ISIN
-              </th>
-
-              <th className="text-right py-3 px-4 font-medium text-slate-700">
-                Qty
-              </th>
-
-              <th
-                onClick={() => handleSort("nav")}
-                className="text-right py-3 px-4 font-medium text-slate-700 cursor-pointer hover:bg-slate-100"
-              >
-                <div className="flex justify-end gap-2">
-                  NAV <ArrowUpDown size={14} />
+                <div className="mt-2 grid grid-cols-2 gap-2 text-xs">
+                  <div className="text-slate-500">Current</div>
+                  <div className="text-right font-medium">{fmt(h.value)}</div>
+                  <div className="text-slate-500">Invested</div>
+                  <div className="text-right">{fmt(h.invested_amount)}</div>
+                  <div className="text-slate-500">Qty</div>
+                  <div className="text-right">{h.quantity ?? "-"}</div>
+                  <div className="text-slate-500">1Y</div>
+                  <div className={`text-right font-medium ${returnColor(h.returns?.["1y"])}`}>
+                    {fmtPct(h.returns?.["1y"])}
+                  </div>
                 </div>
-              </th>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
 
-              <th
-                onClick={() => handleSort("invested_amount")}
-                className="text-right py-3 px-4 font-medium text-slate-700 cursor-pointer hover:bg-slate-100"
-              >
-                <div className="flex justify-end gap-2">
-                  Invested <ArrowUpDown size={14} />
-                </div>
-              </th>
+      {/* Table (sm and up) */}
+      <div className="hidden sm:block">
+        {!hasHoldings ? (
+          <div className="text-center py-8 text-slate-500">No holdings found</div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="min-w-full border-collapse text-sm">
+              <thead className="bg-slate-50">
+                <tr className="border-b border-slate-200">
+                  <th
+                    onClick={() => handleSort("company")}
+                    className="text-left py-3 px-4 font-medium text-slate-700 cursor-pointer hover:bg-slate-100"
+                  >
+                    <div className="flex items-center gap-2">
+                      Company / Scheme <ArrowUpDown size={14} />
+                    </div>
+                  </th>
 
-              <th
-                onClick={() => handleSort("value")}
-                className="text-right py-3 px-4 font-medium text-slate-700 cursor-pointer hover:bg-slate-100"
-              >
-                <div className="flex justify-end gap-2">
-                  Current Value <ArrowUpDown size={14} />
-                </div>
-              </th>
+                  <th className="text-left py-3 px-4 font-medium text-slate-700">
+                    ISIN
+                  </th>
 
-              {/* RETURNS */}
-              <th
-                onClick={() => handleSort("return_1y")}
-                className="text-right py-3 px-4 font-medium text-slate-700 cursor-pointer hover:bg-slate-100"
-              >
-                1Y %
-              </th>
-              <th
-                onClick={() => handleSort("return_3y")}
-                className="text-right py-3 px-4 font-medium text-slate-700 cursor-pointer hover:bg-slate-100"
-              >
-                3Y %
-              </th>
-              <th
-                onClick={() => handleSort("return_5y")}
-                className="text-right py-3 px-4 font-medium text-slate-700 cursor-pointer hover:bg-slate-100"
-              >
-                5Y %
-              </th>
-              <th
-                onClick={() => handleSort("return_10y")}
-                className="text-right py-3 px-4 font-medium text-slate-700 cursor-pointer hover:bg-slate-100"
-              >
-                10Y %
-              </th>
+                  <th className="text-right py-3 px-4 font-medium text-slate-700">
+                    Qty
+                  </th>
 
-              <th className="text-left py-3 px-4 font-medium text-slate-700">
-                Category
-              </th>
-            </tr>
-          </thead>
+                  <th
+                    onClick={() => handleSort("nav")}
+                    className="text-right py-3 px-4 font-medium text-slate-700 cursor-pointer hover:bg-slate-100"
+                  >
+                    <div className="flex justify-end gap-2">
+                      NAV <ArrowUpDown size={14} />
+                    </div>
+                  </th>
 
-          <tbody>
-            {filteredAndSortedHoldings.length === 0 ? (
-              <tr>
-                <td colSpan={11} className="text-center py-8 text-slate-500">
-                  No holdings found
-                </td>
-              </tr>
-            ) : (
-              filteredAndSortedHoldings.map((h, i) => (
-                <tr
-                  key={i}
-                  className={`border-b transition border-slate-100 ${
-                    i % 2 === 0 ? 'bg-white' : 'bg-slate-50/60'
-                  } hover:bg-cyan-50/40`}
-                >
-                  <td className="py-3 px-4 font-medium text-slate-800">
-                    {h.company}
-                  </td>
-                  <td className="py-3 px-4 text-sm text-slate-600">
-                    {h.isin}
-                  </td>
-                  <td className="py-3 px-4 text-right text-slate-700">
-                    {h.quantity}
-                  </td>
-                  <td className="py-3 px-4 text-right text-slate-700">
-                    {fmt(h.nav)}
-                  </td>
-                  <td className="py-3 px-4 text-right text-slate-700">
-                    {fmt(h.invested_amount)}
-                  </td>
-                  <td className="py-3 px-4 text-right font-semibold text-slate-800">
-                    {fmt(h.value)}
-                  </td>
+                  <th
+                    onClick={() => handleSort("invested_amount")}
+                    className="text-right py-3 px-4 font-medium text-slate-700 cursor-pointer hover:bg-slate-100"
+                  >
+                    <div className="flex justify-end gap-2">
+                      Invested <ArrowUpDown size={14} />
+                    </div>
+                  </th>
+
+                  <th
+                    onClick={() => handleSort("value")}
+                    className="text-right py-3 px-4 font-medium text-slate-700 cursor-pointer hover:bg-slate-100"
+                  >
+                    <div className="flex justify-end gap-2">
+                      Current Value <ArrowUpDown size={14} />
+                    </div>
+                  </th>
 
                   {/* RETURNS */}
-                  <td
-                    className={`py-3 px-4 text-right font-medium ${returnColor(
-                      h.returns?.["1y"]
-                    )}`}
+                  <th
+                    onClick={() => handleSort("return_1y")}
+                    className="text-right py-3 px-4 font-medium text-slate-700 cursor-pointer hover:bg-slate-100"
                   >
-                    {fmtPct(h.returns?.["1y"])}
-                  </td>
-                  <td
-                    className={`py-3 px-4 text-right font-medium ${returnColor(
-                      h.returns?.["3y"]
-                    )}`}
+                    1Y %
+                  </th>
+                  <th
+                    onClick={() => handleSort("return_3y")}
+                    className="text-right py-3 px-4 font-medium text-slate-700 cursor-pointer hover:bg-slate-100"
                   >
-                    {fmtPct(h.returns?.["3y"])}
-                  </td>
-                  <td
-                    className={`py-3 px-4 text-right font-medium ${returnColor(
-                      h.returns?.["5y"]
-                    )}`}
+                    3Y %
+                  </th>
+                  <th
+                    onClick={() => handleSort("return_5y")}
+                    className="text-right py-3 px-4 font-medium text-slate-700 cursor-pointer hover:bg-slate-100"
                   >
-                    {fmtPct(h.returns?.["5y"])}
-                  </td>
-                  <td
-                    className={`py-3 px-4 text-right font-medium ${returnColor(
-                      h.returns?.["10y"]
-                    )}`}
+                    5Y %
+                  </th>
+                  <th
+                    onClick={() => handleSort("return_10y")}
+                    className="text-right py-3 px-4 font-medium text-slate-700 cursor-pointer hover:bg-slate-100"
                   >
-                    {fmtPct(h.returns?.["10y"])}
-                  </td>
+                    10Y %
+                  </th>
 
-                  <td className="py-3 px-4 text-slate-700">
-                    {h.category}
-                  </td>
+                  <th className="text-left py-3 px-4 font-medium text-slate-700">
+                    Category
+                  </th>
                 </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+              </thead>
+
+              <tbody>
+                {filteredAndSortedHoldings.map((h, i) => (
+                  <tr
+                    key={i}
+                    className={`border-b transition border-slate-100 ${
+                      i % 2 === 0 ? "bg-white" : "bg-slate-50/60"
+                    } hover:bg-cyan-50/40`}
+                  >
+                    <td className="py-3 px-4 font-medium text-slate-800">
+                      {h.company}
+                    </td>
+                    <td className="py-3 px-4 text-sm text-slate-600">
+                      {h.isin}
+                    </td>
+                    <td className="py-3 px-4 text-right text-slate-700">
+                      {h.quantity}
+                    </td>
+                    <td className="py-3 px-4 text-right text-slate-700">
+                      {fmt(h.nav)}
+                    </td>
+                    <td className="py-3 px-4 text-right text-slate-700">
+                      {fmt(h.invested_amount)}
+                    </td>
+                    <td className="py-3 px-4 text-right font-semibold text-slate-800">
+                      {fmt(h.value)}
+                    </td>
+
+                    {/* RETURNS */}
+                    <td
+                      className={`py-3 px-4 text-right font-medium ${returnColor(
+                        h.returns?.["1y"]
+                      )}`}
+                    >
+                      {fmtPct(h.returns?.["1y"])}
+                    </td>
+                    <td
+                      className={`py-3 px-4 text-right font-medium ${returnColor(
+                        h.returns?.["3y"]
+                      )}`}
+                    >
+                      {fmtPct(h.returns?.["3y"])}
+                    </td>
+                    <td
+                      className={`py-3 px-4 text-right font-medium ${returnColor(
+                        h.returns?.["5y"]
+                      )}`}
+                    >
+                      {fmtPct(h.returns?.["5y"])}
+                    </td>
+                    <td
+                      className={`py-3 px-4 text-right font-medium ${returnColor(
+                        h.returns?.["10y"]
+                      )}`}
+                    >
+                      {fmtPct(h.returns?.["10y"])}
+                    </td>
+
+                    <td className="py-3 px-4 text-slate-700">
+                      {h.category}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
 
       <div className="mt-4 text-sm text-slate-600">

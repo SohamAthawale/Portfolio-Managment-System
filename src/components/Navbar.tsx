@@ -7,7 +7,7 @@ export const Navbar = () => {
   const navigate = useNavigate();
 
   const handleProfileClick = () => {
-    navigate(user?.role === 'admin' ? '/admin' : '/pmsreports/profile');
+    navigate(user?.role === 'admin' ? '/admin' : '/profile');
   };
 
   return (

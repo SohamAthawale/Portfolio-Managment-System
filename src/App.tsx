@@ -32,9 +32,11 @@ const RoleBasedDashboard: React.FC = () => {
    ✅ MAIN APP ROUTES
    ------------------------------------------------- */
 function App() {
+  const routerBase = (import.meta.env.BASE_URL || '/').replace(/\/$/, '') || '/';
+
   return (
     <AuthProvider>
-      <Router>
+      <Router basename={routerBase}>
         <Routes>
           {/* ---------- PUBLIC ROUTES ---------- */}
           <Route path="/login" element={<Login />} />
@@ -125,13 +127,14 @@ function App() {
 
           {/* ---------- ✅ NEW PROFILE PAGE ---------- */}
           <Route
-            path="/pmsreports/profile"
+            path="/profile"
             element={
               <ProtectedRoute allowedRoles={['admin', 'user']}>
                 <ProfilePage />
               </ProtectedRoute>
             }
           />
+          <Route path="/pmsreports/profile" element={<Navigate to="/profile" replace />} />
           <Route
             path="/admin"
             element={

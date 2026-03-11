@@ -41,6 +41,7 @@ const API_BASE = import.meta.env.VITE_API_URL || '/pmsreports';
 const DEFAULT_CHART_LEFT_Y_WIDTH = 40;
 const DEFAULT_CHART_RIGHT_MARGIN = 70;
 const DEFAULT_CHART_BOTTOM_MARGIN = 20;
+const MOBILE_BREAKPOINT = 640;
 
 const COLORS = [
   "#2563eb",
@@ -88,12 +89,12 @@ export const Dashboard: React.FC = () => {
   // mobile detection (used to keep JSX/props TS-safe)
   const [isMobile, setIsMobile] = useState<boolean>(() => {
     if (typeof window === "undefined") return false;
-    return window.innerWidth <= 375; // treat <=375 as smallest phones (iPhone SE / 344 fits inside)
+    return window.innerWidth < MOBILE_BREAKPOINT;
   });
 
   useEffect(() => {
     const onResize = () => {
-      setIsMobile(window.innerWidth <= 375);
+      setIsMobile(window.innerWidth < MOBILE_BREAKPOINT);
     };
     window.addEventListener("resize", onResize);
     return () => window.removeEventListener("resize", onResize);
@@ -359,8 +360,17 @@ mfCategoryTableData.sort((a, b) =>
   const chartRightMargin = isMobile ? 55 : DEFAULT_CHART_RIGHT_MARGIN;
   const chartBottomMargin = isMobile ? 8 : DEFAULT_CHART_BOTTOM_MARGIN;
   const barSize = isMobile ? 12 : 18;
-  const chartHeightModel = isMobile ? 260 : 288;
+  const chartHeightModel = isMobile ? 240 : 288;
   const chartHeightSmall = isMobile ? 220 : 288;
+  const pieOuterRadius = isMobile ? 90 : 115;
+  const pieInnerRadius = isMobile ? 42 : 55;
+
+  const truncateLabel = (value: unknown, max = 14) => {
+    const str = String(value ?? "");
+    if (str.length <= max) return str;
+    const safeMax = Math.max(4, max);
+    return `${str.slice(0, safeMax - 3)}...`;
+  };
 
   return (
     <Layout>
@@ -375,7 +385,7 @@ mfCategoryTableData.sort((a, b) =>
             <div className="text-lg sm:text-xl font-semibold">Live Portfolio Report</div>
           </div>
 
-          <div className="text-sm text-right">
+          <div className="text-sm text-left sm:text-right">
             <div>
               <span className="font-medium">Account:</span> {user?.email ?? '-'}
             </div>
@@ -390,14 +400,14 @@ mfCategoryTableData.sort((a, b) =>
           <div className="flex flex-col sm:flex-row gap-3">
             <button
               onClick={downloadPDF}
-              className="btn-secondary"
+              className="btn-secondary w-full sm:w-auto"
             >
               <Download size={14} /> Download PDF
             </button>
 
             <button
               onClick={() => navigate("/service-requests")}
-              className="btn-primary"
+              className="btn-primary w-full sm:w-auto"
             >
               Raise Service Request
             </button>
@@ -468,7 +478,7 @@ mfCategoryTableData.sort((a, b) =>
           {safeAssetAlloc.length === 0 ? (
             <div className="text-center text-gray-500 py-8">No data available</div>
           ) : (
-            <div className="w-full" style={{ height: chartHeightModel, minWidth: isMobile ? 300 : 0 }}>
+            <div className="w-full" style={{ height: chartHeightModel, minWidth: isMobile ? 260 : 0 }}>
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart
                   layout="vertical"
@@ -482,7 +492,16 @@ mfCategoryTableData.sort((a, b) =>
                 >
                   <CartesianGrid strokeDasharray="3 3" vertical={false} />
                   <XAxis type="number" tick={{ fontSize: isMobile ? 10 : 12 }} tickLine={false} axisLine={false} tickFormatter={(v) => `${Number(v).toFixed(0)}%`} />
-                  <YAxis dataKey="category" type="category" width={chartLeftWidth} tick={{ fontSize: isMobile ? 10 : 12 }} interval={0} tickLine={false} axisLine={false} />
+                  <YAxis
+                    dataKey="category"
+                    type="category"
+                    width={chartLeftWidth}
+                    tick={{ fontSize: isMobile ? 10 : 12 }}
+                    interval={0}
+                    tickLine={false}
+                    axisLine={false}
+                    tickFormatter={(value) => (isMobile ? truncateLabel(value, 12) : String(value ?? ""))}
+                  />
                   <Tooltip />
                   <Bar dataKey="percentage" barSize={barSize}>
                     {safeAssetAlloc.map((_, idx) => (
@@ -514,21 +533,22 @@ mfCategoryTableData.sort((a, b) =>
           {safeAssetAlloc.length === 0 ? (
             <div className="text-center text-gray-500 py-8">No data available</div>
           ) : (
-            <div className="w-full flex justify-center" style={{ height: isMobile ? 260 : 340 }}>
+            <div className="w-full flex justify-center" style={{ height: isMobile ? 240 : 340 }}>
               <div className="w-[90%] sm:w-[60%] min-w-[200px] sm:min-w-[240px]">
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
                     <Pie
                         data={safeAssetAlloc}
                         dataKey="percentage"
-                        outerRadius={115}
-                        innerRadius={55}
+                        outerRadius={pieOuterRadius}
+                        innerRadius={pieInnerRadius}
                         paddingAngle={2}
                         nameKey="category"
-                        labelLine={true}
+                        labelLine={!isMobile}
                         // Option A: category + percentage
                         label={({ payload, percent }: any) => {
                           const pct = typeof percent === 'number' ? (percent * 100).toFixed(1) : '0.0';
+                          if (isMobile) return `${pct}%`;
                           return `${payload?.category ?? ''}: ${pct}%`;
                         }}
                       >
@@ -543,7 +563,7 @@ mfCategoryTableData.sort((a, b) =>
                         y="52%"
                         textAnchor="middle"
                         dominantBaseline="middle"
-                        className="text-sm font-semibold"
+                        className="text-xs sm:text-sm font-semibold"
                         fill="#1f2937"
                       >
                         ₹{safeSummary.total_portfolio_value.toLocaleString('en-IN')}
@@ -575,7 +595,7 @@ mfCategoryTableData.sort((a, b) =>
             {safeTopAMC.length === 0 ? (
               <div className="text-center text-gray-500 py-8">No data available</div>
             ) : (
-              <div className="w-full" style={{ height: chartHeightSmall, minWidth: isMobile ? 300 : 0 }}>
+              <div className="w-full" style={{ height: chartHeightSmall, minWidth: isMobile ? 260 : 0 }}>
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart
                     layout="vertical"
@@ -595,7 +615,13 @@ mfCategoryTableData.sort((a, b) =>
                       axisLine={false}
                       tickFormatter={(val) => `₹${Number(val).toLocaleString("en-IN")}`}
                     />
-                    <YAxis dataKey="amc" type="category" width={chartLeftWidth} tick={{ fontSize: isMobile ? 10 : 12 }} />
+                    <YAxis
+                      dataKey="amc"
+                      type="category"
+                      width={chartLeftWidth}
+                      tick={{ fontSize: isMobile ? 10 : 12 }}
+                      tickFormatter={(value) => (isMobile ? truncateLabel(value, 12) : String(value ?? ""))}
+                    />
                     <Tooltip />
                     <Bar dataKey="value" barSize={barSize}>
                       {safeTopAMC.map((_, i) => (
@@ -626,7 +652,7 @@ mfCategoryTableData.sort((a, b) =>
             {safeTopCategory.length === 0 ? (
               <div className="text-center text-gray-500 py-8">No data available</div>
             ) : (
-              <div className="w-full" style={{ height: chartHeightSmall, minWidth: isMobile ? 300 : 0 }}>
+              <div className="w-full" style={{ height: chartHeightSmall, minWidth: isMobile ? 260 : 0 }}>
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart
                     layout="vertical"
@@ -640,7 +666,13 @@ mfCategoryTableData.sort((a, b) =>
                   >
                     <CartesianGrid strokeDasharray="3 3" vertical={false} />
                     <XAxis type="number" tick={{ fontSize: isMobile ? 10 : 12 }} tickLine={false} axisLine={false} tickFormatter={(val) => `₹${Number(val).toLocaleString("en-IN")}`} />
-                    <YAxis dataKey="category" type="category" width={chartLeftWidth} tick={{ fontSize: isMobile ? 10 : 12 }} />
+                    <YAxis
+                      dataKey="category"
+                      type="category"
+                      width={chartLeftWidth}
+                      tick={{ fontSize: isMobile ? 10 : 12 }}
+                      tickFormatter={(value) => (isMobile ? truncateLabel(value, 12) : String(value ?? ""))}
+                    />
                     <Tooltip />
                     <Bar dataKey="value" barSize={barSize}>
                       {safeTopCategory.map((_, i) => (
@@ -675,47 +707,75 @@ mfCategoryTableData.sort((a, b) =>
       No MF category data available
     </div>
   ) : (
-    <table className="min-w-full border border-slate-200 text-sm">
-      <thead className="bg-slate-50">
-        <tr>
-          <th className="border px-3 py-2 text-left">Mutual Fund</th>
-          <th className="border px-3 py-2 text-left">Category</th>
-          <th className="border px-3 py-2 text-right">Invested (₹)</th>
-          <th className="border px-3 py-2 text-right">Current (₹)</th>
-          <th className="border px-3 py-2 text-right">% Holdings</th>
-          <th className="border px-3 py-2 text-right">Return %</th>
-        </tr>
-      </thead>
-
-      <tbody>
+    <>
+      <div className="sm:hidden space-y-3">
         {mfCategoryTableData.map((row, i) => (
-          <tr key={i} className="hover:bg-slate-50">
-            <td className="border px-3 py-2 font-medium">
-              {row.amc}
-            </td>
-            <td className="border px-3 py-2">
-              {row.category}
-            </td>
-            <td className="border px-3 py-2 text-right">
-              ₹{row.invested.toLocaleString("en-IN")}
-            </td>
-            <td className="border px-3 py-2 text-right">
-              ₹{row.current.toLocaleString("en-IN")}
-            </td>
-            <td className="border px-3 py-2 text-right">
-              {row.holding_pct}%
-            </td>
-            <td
-              className={`border px-3 py-2 text-right font-medium ${
-                row.return_pct >= 0 ? 'text-emerald-600' : 'text-rose-600'
-              }`}
-            >
-              {row.return_pct}%
-            </td>
-          </tr>
+          <div key={i} className="rounded-xl border border-slate-200/70 bg-white/80 p-3 shadow-sm">
+            <div className="text-sm font-semibold text-slate-800">{row.amc}</div>
+            <div className="text-xs text-slate-500">{row.category}</div>
+            <div className="mt-2 grid grid-cols-2 gap-2 text-xs">
+              <div className="text-slate-500">Invested</div>
+              <div className="text-right font-medium">₹{row.invested.toLocaleString("en-IN")}</div>
+              <div className="text-slate-500">Current</div>
+              <div className="text-right font-medium">₹{row.current.toLocaleString("en-IN")}</div>
+              <div className="text-slate-500">% Holdings</div>
+              <div className="text-right">{row.holding_pct}%</div>
+              <div className="text-slate-500">Return %</div>
+              <div
+                className={`text-right font-medium ${
+                  row.return_pct >= 0 ? "text-emerald-600" : "text-rose-600"
+                }`}
+              >
+                {row.return_pct}%
+              </div>
+            </div>
+          </div>
         ))}
-      </tbody>
-    </table>
+      </div>
+      <div className="hidden sm:block">
+        <table className="min-w-full border border-slate-200 text-sm">
+          <thead className="bg-slate-50">
+            <tr>
+              <th className="border px-3 py-2 text-left">Mutual Fund</th>
+              <th className="border px-3 py-2 text-left">Category</th>
+              <th className="border px-3 py-2 text-right">Invested (₹)</th>
+              <th className="border px-3 py-2 text-right">Current (₹)</th>
+              <th className="border px-3 py-2 text-right">% Holdings</th>
+              <th className="border px-3 py-2 text-right">Return %</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            {mfCategoryTableData.map((row, i) => (
+              <tr key={i} className="hover:bg-slate-50">
+                <td className="border px-3 py-2 font-medium">
+                  {row.amc}
+                </td>
+                <td className="border px-3 py-2">
+                  {row.category}
+                </td>
+                <td className="border px-3 py-2 text-right">
+                  ₹{row.invested.toLocaleString("en-IN")}
+                </td>
+                <td className="border px-3 py-2 text-right">
+                  ₹{row.current.toLocaleString("en-IN")}
+                </td>
+                <td className="border px-3 py-2 text-right">
+                  {row.holding_pct}%
+                </td>
+                <td
+                  className={`border px-3 py-2 text-right font-medium ${
+                    row.return_pct >= 0 ? "text-emerald-600" : "text-rose-600"
+                  }`}
+                >
+                  {row.return_pct}%
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </>
   )}
 </div>
 
